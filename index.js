@@ -25,7 +25,6 @@ if (fs.existsSync(DATA_FILE)) {
   linkedUsers = JSON.parse(fs.readFileSync(DATA_FILE));
 }
 
-// Discord Bot Part
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -55,14 +54,12 @@ client.on('messageCreate', async message => {
   }
 });
 
-// API Part for Roblox to check if user is linked and booster
 app.get("/check-booster/:robloxUserId", (req, res) => {
   const robloxUserId = req.params.robloxUserId;
   const isBooster = Object.values(linkedUsers).includes(robloxUserId);
   res.json({ isBooster });
 });
 
-// Start Express server and Discord bot
 app.listen(PORT, () => {
   console.log(`API Server listening on port ${PORT}`);
 });
