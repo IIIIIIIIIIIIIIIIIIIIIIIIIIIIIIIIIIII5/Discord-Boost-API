@@ -60,6 +60,8 @@ client.on('messageCreate', async message => {
 
 app.get("/check-booster/:robloxUserId", (req, res) => {
   const robloxUserId = req.params.robloxUserId;
+  console.log("Checking:", robloxUserId);
+  console.log("Linked Users:", linkedUsers);
   const isBooster = Object.values(linkedUsers).includes(robloxUserId);
   res.json({ isBooster });
 });
