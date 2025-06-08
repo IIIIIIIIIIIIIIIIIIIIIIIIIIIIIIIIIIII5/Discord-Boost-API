@@ -36,21 +36,26 @@ client.on('messageCreate', async message => {
   const cmd = args.shift().toLowerCase();
 
   if (cmd === "link") {
-    if (args.length === 0) {
-      return message.reply("Please provide your Roblox UserID, e.g. `!link 12345678`");
-    }
-
-    const robloxUserId = args[0];
-    const member = message.member;
-
-    if (!member.premiumSince) {
-      return message.reply("You need to be a server booster to link your Roblox account.");
-    }
-
-    linkedUsers[message.author.id] = robloxUserId;
-    fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
-    message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks will be granted.`);
+  if (args.length === 0) {
+    return message.reply("Please provide your Roblox UserID, e.g. `!link 12345678`");
   }
+
+  const robloxUserId = args[0];
+
+  if (!/^\d+$/.test(robloxUserId)) {
+    return message.reply("Invalid Roblox UserID. It must be numbers only.");
+  }
+
+  const member = message.member;
+
+  if (!member.premiumSince) {
+    return message.reply("You need to be a server booster to link your Roblox account.");
+  }
+
+  linkedUsers[message.author.id] = robloxUserId;
+  fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
+  message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks will be granted.`);
+}
 });
 
 app.get("/check-booster/:robloxUserId", (req, res) => {
