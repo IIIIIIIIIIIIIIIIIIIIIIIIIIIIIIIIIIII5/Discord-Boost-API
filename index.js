@@ -36,37 +36,56 @@ client.on('messageCreate', async message => {
   const cmd = args.shift().toLowerCase();
 
   if (cmd === "link") {
-  if (args.length === 0) {
-    return message.reply("Please provide your Roblox UserID, e.g. `!link 12345678`");
+    if (args.length === 0) {
+      return message.reply("Please provide your Roblox UserID, e.g. `!link 12345678`");
+    }
+
+    const robloxUserId = args[0];
+
+    if (!/^\d+$/.test(robloxUserId)) {
+      return message.reply("Invalid Roblox UserID. It must be numbers only.");
+    }
+
+    const member = message.member;
+
+    if (!member.premiumSince) {
+      return message.reply("You need to be a server booster to link your Roblox account.");
+    }
+
+    // Allow multiple linked Roblox IDs per Discord user
+    if (!linkedUsers[message.author.id]) {
+      linkedUsers[message.author.id] = [];
+    }
+
+    if (!linkedUsers[message.author.id].includes(robloxUserId)) {
+      linkedUsers[message.author.id].push(robloxUserId);
+      fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
+      message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks will be granted.`);
+    } else {
+      message.reply(`Roblox UserID: ${robloxUserId} is already linked.`);
+    }
   }
-
-  const robloxUserId = args[0];
-
-  if (!/^\d+$/.test(robloxUserId)) {
-    return message.reply("Invalid Roblox UserID. It must be numbers only.");
-  }
-
-  const member = message.member;
-
-  if (!member.premiumSince) {
-    return message.reply("You need to be a server booster to link your Roblox account.");
-  }
-
-  linkedUsers[message.author.id] = robloxUserId;
-  fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
-  message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks will be granted.`);
-}
 });
 
 app.get("/check-booster/:robloxUserId", (req, res) => {
   const robloxUserId = req.params.robloxUserId;
   console.log("Checking:", robloxUserId);
   console.log("Linked Users:", linkedUsers);
-  const isBooster = Object.values(linkedUsers).includes(robloxUserId);
+
+  let isBooster = false;
+
+  for (const discordId in linkedUsers) {
+    if (linkedUsers[discordId].includes(robloxUserId)) {
+      isBooster = true;
+      break;
+    }
+  }
+
   res.json({ isBooster });
 });
 
 app.listen(PORT, () => {
   console.log(`API Server listening on port ${PORT}`);
 });
+
 client.login(process.env.DISCORD_TOKEN);
