@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
@@ -12,7 +12,9 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
+  partials: [Partials.GuildMember]
 });
 
 const PREFIX = "!";
@@ -29,8 +31,7 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async message => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(PREFIX)) return;
+  if (message.author.bot || !message.content.startsWith(PREFIX)) return;
 
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const cmd = args.shift().toLowerCase();
@@ -41,41 +42,46 @@ client.on('messageCreate', async message => {
     }
 
     const robloxUserId = args[0];
-
     if (!/^\d+$/.test(robloxUserId)) {
       return message.reply("Invalid Roblox UserID. It must be numbers only.");
     }
 
     const member = message.member;
-
     if (!member.premiumSince) {
       return message.reply("You need to be a server booster to link your Roblox account.");
     }
 
-    // Allow multiple linked Roblox IDs per Discord user
-    if (!linkedUsers[message.author.id]) {
-      linkedUsers[message.author.id] = [];
+    const discordId = message.author.id;
+
+    if (!linkedUsers[discordId]) {
+      linkedUsers[discordId] = {
+        robloxIds: [],
+        isBooster: true
+      };
     }
 
-    if (!linkedUsers[message.author.id].includes(robloxUserId)) {
-      linkedUsers[message.author.id].push(robloxUserId);
+    if (!linkedUsers[discordId].robloxIds.includes(robloxUserId)) {
+      linkedUsers[discordId].robloxIds.push(robloxUserId);
+      linkedUsers[discordId].isBooster = true;
       fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
-      message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks will be granted.`);
+      return message.reply(`Linked your Discord to Roblox UserID: ${robloxUserId}. Booster perks granted.`);
     } else {
-      message.reply(`Roblox UserID: ${robloxUserId} is already linked.`);
+      return message.reply(`Roblox UserID: ${robloxUserId} is already linked.`);
     }
   }
 });
 
 app.get("/check-booster/:robloxUserId", (req, res) => {
   const robloxUserId = req.params.robloxUserId;
-  console.log("Checking:", robloxUserId);
-  console.log("Linked Users:", linkedUsers);
-
   let isBooster = false;
 
   for (const discordId in linkedUsers) {
-    if (linkedUsers[discordId].includes(robloxUserId)) {
+    const userData = linkedUsers[discordId];
+    if (
+      userData.robloxIds &&
+      userData.robloxIds.includes(robloxUserId) &&
+      userData.isBooster
+    ) {
       isBooster = true;
       break;
     }
