@@ -47,6 +47,7 @@ client.on('messageCreate', async message => {
     }
 
     const member = message.member;
+
     if (!member.premiumSince) {
       return message.reply("You need to be a server booster to link your Roblox account.");
     }
@@ -68,6 +69,28 @@ client.on('messageCreate', async message => {
     } else {
       return message.reply(`Roblox UserID: ${robloxUserId} is already linked.`);
     }
+  }
+
+  if (cmd === "unlink") {
+    if (args.length === 0) {
+      return message.reply("Please provide the Roblox UserID you want to unlink, e.g. `!unlink 12345678`");
+    }
+
+    const robloxUserId = args[0];
+    const discordId = message.author.id;
+
+    if (!linkedUsers[discordId] || !linkedUsers[discordId].robloxIds.includes(robloxUserId)) {
+      return message.reply(`Roblox UserID: ${robloxUserId} is not linked to your account.`);
+    }
+
+    linkedUsers[discordId].robloxIds = linkedUsers[discordId].robloxIds.filter(id => id !== robloxUserId);
+
+    if (linkedUsers[discordId].robloxIds.length === 0) {
+      delete linkedUsers[discordId];
+    }
+
+    fs.writeFileSync(DATA_FILE, JSON.stringify(linkedUsers, null, 2));
+    return message.reply(`Unlinked Roblox UserID: ${robloxUserId}. Booster perks revoked.`);
   }
 });
 
